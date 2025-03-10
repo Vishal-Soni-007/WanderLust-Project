@@ -34,12 +34,15 @@ module.exports.showListing = async (req, res)=>{
 
 module.exports.createListing = async (req, res, next) => {
        
+  let url = req.file.path;
+  let filename = req.file.filename;
+
+ 
   
-    // console.log(req.body.listing); // Debugging ke liye
 
     let { title, description, price, location, country, image } = req.body.listing;
 
-    // Agar image URL nahi diya gaya, toh default set kar do
+
     let imageUrl = image && image.url ? image.url : "https://images.unsplash.com/photo-1576941089067-2de3c901e126?q=80&w=1956&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 
     const newListing = new Listing({
@@ -50,7 +53,7 @@ module.exports.createListing = async (req, res, next) => {
         country,
         image: { url: imageUrl }
     });
-    
+    newListing.image = { url, filename };
     newListing.owner = req.user._id;
     console.log(req.user);
     await newListing.save();
@@ -73,28 +76,45 @@ module.exports.renderEditForm = async (req, res)=>{
     };
 
     module.exports.updateListing = async (req, res) => {
+      console.log("update route hit!!")
+       let { id } = req.params;
+       let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing}, { new: true});
+      if(typeof req.file !== "undefined"){
+        let url = req.file.path;
+       let filename = req.file.filename;
 
-        let { id } = req.params;
-        let { title, description, price, location, country, image } = req.body.listing;
-        // Agar user naye image URL ko nahi deta, toh purana image URL use karo
-    let imageUrl = image && image.url ? image.url : listing.image.url;
+       listing.image = { url, filename};
+       console.log(listing);
+       await listing.save();
+      
+        req.flash("success", "Listing Updated!");
+      return  res.redirect(`/listings/${id}`);
+      };
     
-    const updatedListing = await Listing.findByIdAndUpdate(
-        id,
-        {
-            title,
-            description,
-            price,
-            location,
-            country,
-            image: { url: imageUrl }
-        },
-        { new: true }
-    );
+
+    //     let { id } = req.params;
+    //     let { title, description, price, location, country, image } = req.body.listing;
+    //     // Agar user naye image URL ko nahi deta, toh purana image URL use karo
+    // let imageUrl = image && url ? image.url : listing.image.url;
     
-    console.log(updatedListing);
-    req.flash("success", "Listing Updated!");
-    res.redirect(`/listings/${id}`);
+    // const updatedListing = await Listing.findByIdAndUpdate(
+    //     id,
+    //     {
+    //         title,
+    //         description,
+    //         price,
+    //         location,
+    //         country,
+    //         image: { url: url, filename }
+    //     },
+    //     { new: true }
+    // );
+   
+    
+    // console.log(updatedListing);
+
+
+  
     };
 
     module.exports.destroyListing = async (req, res)=>{
